@@ -1,7 +1,7 @@
 """
-Session 管理模块
+Session Management Module
 
-管理用户会话状态和对话历史
+Manages user session state and conversation history
 """
 import uuid
 import time
@@ -14,9 +14,9 @@ from core.config import Config
 @dataclass
 class Session:
     """
-    会话类
+    Session class
 
-    存储单个会话的状态和历史信息
+    Stores state and history for a single session
     """
 
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -27,11 +27,11 @@ class Session:
 
     def add_message(self, role: str, content: str):
         """
-        添加消息到会话
+        Add message to session
 
         Args:
-            role: 角色 (user/assistant)
-            content: 消息内容
+            role: Role (user/assistant)
+            content: Message content
         """
         if role == "user":
             self.messages.append(HumanMessage(content=content))
@@ -40,31 +40,31 @@ class Session:
 
         self.updated_at = time.time()
 
-        # 限制消息数量
+        # Limit message count
         if len(self.messages) > Config.MAX_SESSION_MESSAGES:
-            # 保留最新的消息，移除最早的
-            self.messages = self.messages[-Config.MAX_SESSION_MESSAGES :]
+            # Keep latest messages, remove earliest
+            self.messages = self.messages[-Config.MAX_SESSION_MESSAGES:]
 
     def get_messages(self) -> List[BaseMessage]:
-        """获取所有消息"""
+        """Get all messages"""
         return self.messages.copy()
 
     def get_last_n_messages(self, n: int) -> List[BaseMessage]:
-        """获取最近 N 条消息"""
+        """Get last N messages"""
         return self.messages[-n:]
 
     def clear(self):
-        """清空会话历史"""
+        """Clear session history"""
         self.messages = []
         self.updated_at = time.time()
 
     def is_expired(self) -> bool:
-        """检查会话是否已过期"""
+        """Check if session is expired"""
         elapsed = time.time() - self.updated_at
         return elapsed > (Config.SESSION_EXPIRE_MINUTES * 60)
 
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典表示"""
+        """Convert to dictionary representation"""
         return {
             "id": self.id,
             "created_at": self.created_at,
@@ -79,24 +79,24 @@ class Session:
 
 class SessionManager:
     """
-    会话管理器
+    Session manager
 
-    管理多个会话的生命周期
+    Manages lifecycle of multiple sessions
     """
 
     def __init__(self):
-        """初始化会话管理器"""
+        """Initialize session manager"""
         self._sessions: Dict[str, Session] = {}
 
     def create_session(self, metadata: Optional[Dict[str, Any]] = None) -> Session:
         """
-        创建新会话
+        Create new session
 
         Args:
-            metadata: 会话元数据
+            metadata: Session metadata
 
         Returns:
-            Session: 新创建的会话
+            Session: Newly created session
         """
         session = Session()
         if metadata:
@@ -106,13 +106,13 @@ class SessionManager:
 
     def get_session(self, session_id: str) -> Optional[Session]:
         """
-        获取会话
+        Get session
 
         Args:
-            session_id: 会话 ID
+            session_id: Session ID
 
         Returns:
-            Optional[Session]: 会话对象，如果不存在或已过期则返回 None
+            Optional[Session]: Session object, or None if not exists or expired
         """
         session = self._sessions.get(session_id)
 
@@ -127,13 +127,13 @@ class SessionManager:
 
     def delete_session(self, session_id: str) -> bool:
         """
-        删除会话
+        Delete session
 
         Args:
-            session_id: 会话 ID
+            session_id: Session ID
 
         Returns:
-            bool: 是否成功删除
+            bool: Whether deletion was successful
         """
         if session_id in self._sessions:
             del self._sessions[session_id]
@@ -144,14 +144,14 @@ class SessionManager:
         self, session_id: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None
     ) -> Session:
         """
-        获取或创建会话
+        Get or create session
 
         Args:
-            session_id: 会话 ID，如果 None 则创建新会话
-            metadata: 元数据（仅在创建新会话时使用）
+            session_id: Session ID, if None create new session
+            metadata: Metadata (only used when creating new session)
 
         Returns:
-            Session: 会话对象
+            Session: Session object
         """
         if session_id:
             session = self.get_session(session_id)
@@ -161,12 +161,12 @@ class SessionManager:
         return self.create_session(metadata)
 
     def list_sessions(self) -> List[Dict[str, Any]]:
-        """列出所有活跃会话"""
+        """List all active sessions"""
         self._cleanup_expired()
         return [s.to_dict() for s in self._sessions.values()]
 
     def _cleanup_expired(self):
-        """清理过期会话"""
+        """Clean up expired sessions"""
         expired = [
             sid for sid, s in self._sessions.items() if s.is_expired()
         ]
@@ -174,7 +174,7 @@ class SessionManager:
             del self._sessions[sid]
 
     def get_stats(self) -> Dict[str, Any]:
-        """获取会话统计信息"""
+        """Get session statistics"""
         self._cleanup_expired()
         return {
             "total_sessions": len(self._sessions),

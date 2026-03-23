@@ -4,17 +4,17 @@ __pycache__/
 *$py.class
 *.so
 .Python
-venv/
-env/
-ENV/
-.venv
+
+# 虚拟环境
+backend/venv/
 
 # 环境配置
 .env
+backend/.env
 
 # 项目数据
-chroma_db/
-*.db
+backend/data/
+backend/chroma_db/
 
 # IDE
 .vscode/
@@ -34,3 +34,10 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Node.js / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.local.*
+frontend/package-lock.json

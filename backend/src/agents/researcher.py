@@ -1,7 +1,7 @@
 """
-研究 Agent / 知识库问答 Agent
+Researcher Agent / Knowledge Base Q&A Agent
 
-基于知识库内容进行问答
+Q&A based on knowledge base content
 """
 from typing import List, Optional
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
@@ -13,34 +13,34 @@ from knowledge.store import KnowledgeStore
 
 class ResearcherAgent(BaseAgent):
     """
-    研究 Agent
+    Researcher Agent
 
-    基于知识库内容进行问答，提供有依据的回答
+    Q&A based on knowledge base content, provides evidence-based answers
     """
 
-    DEFAULT_SYSTEM_PROMPT = """你是一个专业的研究助手。
-请基于提供的知识库内容回答用户的问题。
-- 如果知识库中有相关信息，请总结并回答
-- 如果知识库中没有相关信息，请明确告知用户
-- 引用知识库内容时，请保持准确性"""
+    DEFAULT_SYSTEM_PROMPT = """You are a professional research assistant.
+Please answer user questions based on the provided knowledge base content.
+- If there is relevant information in the knowledge base, please summarize and answer
+- If there is no relevant information in the knowledge base, please inform the user
+- When citing knowledge base content, please maintain accuracy"""
 
     def __init__(
         self,
         name: str = "ResearcherAgent",
-        description: str = "知识库问答助手",
+        description: str = "Knowledge base Q&A assistant",
         system_prompt: Optional[str] = None,
         knowledge_store: Optional[KnowledgeStore] = None,
         top_k: int = 5,
     ):
         """
-        初始化研究 Agent
+        Initialize researcher agent
 
         Args:
-            name: Agent 名称
-            description: Agent 描述
-            system_prompt: 系统提示词
-            knowledge_store: 知识库存储
-            top_k: 检索的文档数量
+            name: Agent name
+            description: Agent description
+            system_prompt: System prompt
+            knowledge_store: Knowledge storage
+            top_k: Number of documents to retrieve
         """
         super().__init__(name, description)
         self.system_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
@@ -52,59 +52,59 @@ class ResearcherAgent(BaseAgent):
         self, message: str, context: Optional[List[BaseMessage]] = None
     ) -> str:
         """
-        处理知识库问答请求
+        Process knowledge base Q&A request
 
         Args:
-            message: 用户问题
-            context: 对话历史上下文
+            message: User question
+            context: Conversation history context
 
         Returns:
-            str: 回答
+            str: Answer
         """
         if not self.knowledge_store:
-            return "错误：知识库未初始化"
+            return "Error: Knowledge base not initialized"
 
-        # 检索相关文档
+        # Retrieve relevant documents
         search_results = self.knowledge_store.search(
             query=message,
             n_results=self.top_k,
         )
 
-        # 检查是否有相关结果
+        # Check if there are relevant results
         if (
             not search_results["documents"]
             or not search_results["documents"][0]
         ):
-            return "抱歉，知识库中没有找到与您的问题相关的信息。"
+            return "Sorry, no information related to your question was found in the knowledge base."
 
-        # 构建上下文
+        # Build context
         context_text = self._format_context(search_results)
 
-        # 构建提示词
+        # Build prompt
         prompt = f"""{self.system_prompt}
 
-<知识库内容>
+<Knowledge Base Content>
 {context_text}
-</知识库内容>
+</Knowledge Base Content>
 
-用户问题：{message}
+User Question: {message}
 
-请基于上述知识库内容回答问题："""
+Please answer the question based on the knowledge base content above:"""
 
-        # 调用 LLM
+        # Call LLM
         response = self.llm.invoke([HumanMessage(content=prompt)])
 
         return response.content
 
     def _format_context(self, search_results: dict) -> str:
         """
-        格式化检索结果为上下文
+        Format search results as context
 
         Args:
-            search_results: 搜索结果
+            search_results: Search results
 
         Returns:
-            str: 格式化的上下文文本
+            str: Formatted context text
         """
         documents = search_results["documents"][0]
         distances = search_results["distances"][0] if search_results.get("distances") else []
@@ -113,11 +113,11 @@ class ResearcherAgent(BaseAgent):
         for i, (doc, dist) in enumerate(zip(documents, distances)):
             similarity = 1 - dist if dist else 0
             formatted.append(
-                f"[文档 {i+1}] (相似度：{similarity:.2f})\n{doc}"
+                f"[Document {i+1}] (Similarity: {similarity:.2f})\n{doc}"
             )
 
         return "\n\n".join(formatted)
 
     def set_knowledge_store(self, store: KnowledgeStore):
-        """设置知识库"""
+        """Set knowledge base"""
         self.knowledge_store = store

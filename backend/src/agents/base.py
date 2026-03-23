@@ -1,7 +1,7 @@
 """
-基础 Agent 类
+Base Agent Class
 
-定义所有 Agent 的通用接口和行为
+Defines common interface and behavior for all agents
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
@@ -10,18 +10,18 @@ from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 
 class BaseAgent(ABC):
     """
-    基础 Agent 抽象类
+    Base Agent abstract class
 
-    所有具体的 Agent 都需要继承此类并实现相关方法
+    All specific agents must inherit from this class and implement related methods
     """
 
     def __init__(self, name: str, description: str = ""):
         """
-        初始化基础 Agent
+        Initialize base agent
 
         Args:
-            name: Agent 名称
-            description: Agent 描述
+            name: Agent name
+            description: Agent description
         """
         self.name = name
         self.description = description
@@ -30,31 +30,31 @@ class BaseAgent(ABC):
     @abstractmethod
     def invoke(self, message: str, context: Optional[List[BaseMessage]] = None) -> str:
         """
-        处理用户输入并返回响应
+        Process user input and return response
 
         Args:
-            message: 用户输入
-            context: 可选的对话历史上下文
+            message: User input
+            context: Optional conversation history context
 
         Returns:
-            str: Agent 的响应
+            str: Agent response
         """
         pass
 
     def add_to_memory(self, message: BaseMessage):
-        """添加消息到内存"""
+        """Add message to memory"""
         self._memory.append(message)
 
     def clear_memory(self):
-        """清空内存"""
+        """Clear memory"""
         self._memory = []
 
     def get_memory(self) -> List[BaseMessage]:
-        """获取内存中的消息"""
+        """Get messages from memory"""
         return self._memory.copy()
 
     def get_state(self) -> Dict[str, Any]:
-        """获取 Agent 当前状态"""
+        """Get agent current state"""
         return {
             "name": self.name,
             "description": self.description,

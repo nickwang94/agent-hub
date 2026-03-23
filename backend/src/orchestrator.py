@@ -1,9 +1,9 @@
 """
-多 Agent 编排器
+Multi-Agent Orchestrator
 
-使用 LangGraph 构建状态机，协调多个 Agent 协作
+Uses LangGraph to build state machine for coordinating multiple agents
 """
-from typing import TypedDict, Literal, Annotated
+from typing import TypedDict, Literal, Annotated, Optional
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 import operator
@@ -13,33 +13,33 @@ from agents.researcher import ResearcherAgent
 from session.manager import SessionManager, Session
 
 
-# ============ 定义状态 ============
+# ============ State Definitions ============
 
 class AgentState(TypedDict):
     """
-    Agent 状态定义
+    Agent State Definition
 
-    LangGraph 使用状态来在节点之间传递信息
+    LangGraph uses state to pass information between nodes
     """
     messages: Annotated[list[BaseMessage], operator.add]
-    # 当前选中的 agent
+    # Current selected agent
     current_agent: str
-    # 用户输入
+    # User input
     user_input: str
-    # 最终响应
+    # Final response
     response: str
 
 
-# ============ 定义路由逻辑 ============
+# ============ Routing Logic ============
 
 class AgentOrchestrator:
     """
-    Agent 编排器
+    Agent Orchestrator
 
-    使用 LangGraph 管理多 Agent 协作流程
+    Uses LangGraph to manage multi-agent collaboration workflow
     """
 
-    # Agent 类型
+    # Agent types
     CHAT_AGENT = "chat"
     RESEARCHER_AGENT = "researcher"
 
@@ -50,39 +50,39 @@ class AgentOrchestrator:
         session_manager: SessionManager = None,
     ):
         """
-        初始化编排器
+        Initialize orchestrator
 
         Args:
-            chat_agent: 对话 Agent
-            researcher_agent: 研究 Agent
-            session_manager: 会话管理器
+            chat_agent: Chat Agent
+            researcher_agent: Researcher Agent
+            session_manager: Session Manager
         """
         self.chat_agent = chat_agent or ChatAgent()
         self.researcher_agent = researcher_agent or ResearcherAgent()
         self.session_manager = session_manager or SessionManager()
 
-        # 构建状态图
+        # Build state graph
         self.graph = self._build_graph()
 
     def _build_graph(self) -> StateGraph:
         """
-        构建状态图
+        Build state graph
 
         Returns:
-            StateGraph: 编译好的状态图
+            StateGraph: Compiled state graph
         """
-        # 创建状态图
+        # Create state graph
         workflow = StateGraph(AgentState)
 
-        # 添加节点
+        # Add nodes
         workflow.add_node("router", self._router_node)
         workflow.add_node("chat", self._chat_node)
         workflow.add_node("researcher", self._researcher_node)
 
-        # 设置入口
+        # Set entry point
         workflow.add_edge(START, "router")
 
-        # 添加条件边（路由）
+        # Add conditional edges (routing)
         workflow.add_conditional_edges(
             "router",
             self._route_agent,
@@ -92,23 +92,23 @@ class AgentOrchestrator:
             },
         )
 
-        # 完成处理后结束
+        # End after processing
         workflow.add_edge("chat", END)
         workflow.add_edge("researcher", END)
 
-        # 编译图
+        # Compile graph
         return workflow.compile()
 
     def _router_node(self, state: AgentState) -> AgentState:
         """
-        路由节点
+        Router node
 
-        分析用户输入，决定使用哪个 Agent
+        Analyzes user input to decide which agent to use
         """
-        # 简单的路由逻辑：可以根据关键词判断
+        # Simple routing logic: can use keywords to determine
         user_input = state["user_input"].lower()
 
-        # 如果问题包含研究/知识/文档相关词汇，使用 Researcher Agent
+        # If question contains research/knowledge/document keywords, use Researcher Agent
         research_keywords = [
             "查询", "搜索", "知识库", "文档", "研究",
             "find", "search", "knowledge", "document", "research",
@@ -122,14 +122,14 @@ class AgentOrchestrator:
         return state
 
     def _route_agent(self, state: AgentState) -> Literal["chat", "researcher"]:
-        """路由决策"""
+        """Routing decision"""
         return state["current_agent"]
 
     def _chat_node(self, state: AgentState) -> AgentState:
         """
-        对话节点
+        Chat node
 
-        使用 Chat Agent 处理请求
+        Uses Chat Agent to process request
         """
         response = self.chat_agent.invoke(
             message=state["user_input"],
@@ -144,9 +144,9 @@ class AgentOrchestrator:
 
     def _researcher_node(self, state: AgentState) -> AgentState:
         """
-        研究节点
+        Researcher node
 
-        使用 Researcher Agent 处理请求
+        Uses Researcher Agent to process request
         """
         response = self.researcher_agent.invoke(
             message=state["user_input"],
@@ -165,19 +165,19 @@ class AgentOrchestrator:
         session_id: Optional[str] = None,
     ) -> tuple[str, str]:
         """
-        处理用户消息
+        Process user message
 
         Args:
-            message: 用户输入
-            session_id: 会话 ID
+            message: User input
+            session_id: Session ID
 
         Returns:
-            tuple[str, str]: (响应内容，使用的 Agent 名称)
+            tuple[str, str]: (response content, agent name used)
         """
-        # 获取或创建会话
+        # Get or create session
         session = self.session_manager.get_or_create_session(session_id)
 
-        # 初始状态
+        # Initial state
         initial_state = AgentState(
             messages=session.get_messages(),
             current_agent="",
@@ -185,17 +185,17 @@ class AgentOrchestrator:
             response="",
         )
 
-        # 运行状态图
+        # Run state graph
         final_state = self.graph.invoke(initial_state)
 
-        # 更新会话
+        # Update session
         session.add_message("user", message)
         session.add_message("assistant", final_state["response"])
 
         return final_state["response"], final_state["current_agent"]
 
     def get_agent_info(self) -> dict:
-        """获取所有 Agent 信息"""
+        """Get all agent information"""
         return {
             self.CHAT_AGENT: self.chat_agent.get_state(),
             self.RESEARCHER_AGENT: self.researcher_agent.get_state(),

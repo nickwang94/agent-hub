@@ -1,7 +1,7 @@
 """
-LLM 客户端封装
+LLM Client Wrapper
 
-提供统一的 LLM 访问接口，支持不同的模型提供商
+Provides unified LLM access interface, supports different model providers
 """
 from langchain_openai import ChatOpenAI
 from core.config import Config
@@ -9,18 +9,18 @@ from core.config import Config
 
 def create_llm(streaming: bool = False):
     """
-    创建 LLM 实例
+    Create LLM instance
 
-    阿里百炼兼容 OpenAI API 格式，使用 ChatOpenAI 即可访问
+    Alibaba DashScope is compatible with OpenAI API format, uses ChatOpenAI for access
 
     Args:
-        streaming: 是否启用流式输出
+        streaming: Whether to enable streaming output
 
     Returns:
-        ChatOpenAI: LLM 实例
+        ChatOpenAI: LLM instance
     """
-    # 阿里百炼 API 配置
-    # 使用阿里云百炼兼容 OpenAI 接口端点
+    # Alibaba DashScope API Configuration
+    # Use Alibaba DashScope compatible OpenAI interface endpoint
     base_url = Config.LLM_BASE_URL or "https://coding.dashscope.aliyuncs.com/v1"
 
     return ChatOpenAI(
@@ -33,12 +33,12 @@ def create_llm(streaming: bool = False):
     )
 
 
-# 全局 LLM 实例（可选，用于共享）
+# Global LLM instance (optional, for sharing)
 _llm_instance = None
 
 
 def get_llm(streaming: bool = False):
-    """获取全局 LLM 实例"""
+    """Get global LLM instance"""
     global _llm_instance
     if _llm_instance is None or streaming:
         _llm_instance = create_llm(streaming)

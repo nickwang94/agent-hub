@@ -1,7 +1,7 @@
 """
-对话 Agent
+Chat Agent
 
-用于普通对话交互，是最基础的 Agent 类型
+Used for conversational interaction, the most basic agent type
 """
 from typing import List, Optional
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
@@ -12,28 +12,28 @@ from core.llm import create_llm
 
 class ChatAgent(BaseAgent):
     """
-    对话 Agent
+    Chat Agent
 
-    处理通用的对话交互，保持对话连贯性
+    Handles general conversational interaction, maintains conversation continuity
     """
 
-    DEFAULT_SYSTEM_PROMPT = """你是一个友好的 AI 助手。
-请用简洁、清晰的方式回答用户的问题。
-如果不确定答案，请诚实地告诉用户。"""
+    DEFAULT_SYSTEM_PROMPT = """You are a friendly AI assistant.
+Please answer user questions in a concise and clear manner.
+If you are unsure of the answer, please honestly tell the user."""
 
     def __init__(
         self,
         name: str = "ChatAgent",
-        description: str = "通用对话助手",
+        description: str = "General conversation assistant",
         system_prompt: Optional[str] = None,
     ):
         """
-        初始化对话 Agent
+        Initialize chat agent
 
         Args:
-            name: Agent 名称
-            description: Agent 描述
-            system_prompt: 系统提示词
+            name: Agent name
+            description: Agent description
+            system_prompt: System prompt
         """
         super().__init__(name, description)
         self.system_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
@@ -43,29 +43,29 @@ class ChatAgent(BaseAgent):
         self, message: str, context: Optional[List[BaseMessage]] = None
     ) -> str:
         """
-        处理用户对话请求
+        Process user conversation request
 
         Args:
-            message: 用户输入
-            context: 对话历史上下文
+            message: User input
+            context: Conversation history context
 
         Returns:
-            str: 对话响应
+            str: Conversation response
         """
-        # 构建消息列表
+        # Build message list
         messages: List[BaseMessage] = []
 
-        # 添加系统提示
+        # Add system prompt
         messages.append(SystemMessage(content=self.system_prompt))
 
-        # 添加上下文
+        # Add context
         if context:
             messages.extend(context)
 
-        # 添加当前用户消息
+        # Add current user message
         messages.append(HumanMessage(content=message))
 
-        # 调用 LLM
+        # Call LLM
         response = self.llm.invoke(messages)
 
         return response.content
@@ -74,14 +74,14 @@ class ChatAgent(BaseAgent):
         self, message: str, context: Optional[List[BaseMessage]] = None
     ):
         """
-        流式处理用户请求
+        Stream process user request
 
         Args:
-            message: 用户输入
-            context: 对话历史上下文
+            message: User input
+            context: Conversation history context
 
         Yields:
-            str: 流式响应片段
+            str: Stream response chunks
         """
         messages: List[BaseMessage] = []
         messages.append(SystemMessage(content=self.system_prompt))
@@ -91,7 +91,7 @@ class ChatAgent(BaseAgent):
 
         messages.append(HumanMessage(content=message))
 
-        # 流式调用
+        # Stream call
         for chunk in self.llm.stream(messages):
             if chunk.content:
                 yield chunk.content

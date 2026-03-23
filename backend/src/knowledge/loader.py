@@ -1,7 +1,7 @@
 """
-文档加载模块
+Document Loader Module
 
-支持从不同来源加载和分割文档
+Supports loading and splitting documents from different sources
 """
 from pathlib import Path
 from typing import List, Dict, Any
@@ -10,9 +10,9 @@ import uuid
 
 class DocumentLoader:
     """
-    文档加载器
+    Document loader
 
-    支持从文件或文本加载文档，并自动分割成块
+    Supports loading documents from files or text, and automatically splitting into chunks
     """
 
     def __init__(
@@ -21,11 +21,11 @@ class DocumentLoader:
         chunk_overlap: int = 200,
     ):
         """
-        初始化文档加载器
+        Initialize document loader
 
         Args:
-            chunk_size: 每个文档块的大小（字符数）
-            chunk_overlap: 文档块之间的重叠字符数
+            chunk_size: Size of each document chunk (characters)
+            chunk_overlap: Overlap characters between document chunks
         """
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
@@ -34,14 +34,14 @@ class DocumentLoader:
         self, text: str, metadata: Dict[str, Any] = None
     ) -> List[Dict[str, Any]]:
         """
-        从文本字符串加载文档
+        Load document from text string
 
         Args:
-            text: 文本内容
-            metadata: 元数据
+            text: Text content
+            metadata: Metadata
 
         Returns:
-            List[Dict]: 文档块列表，每个包含 content、id、metadata
+            List[Dict]: List of document chunks, each containing content, id, metadata
         """
         chunks = self._split_text(text)
         documents = []
@@ -63,21 +63,21 @@ class DocumentLoader:
         self, file_path: str, metadata: Dict[str, Any] = None
     ) -> List[Dict[str, Any]]:
         """
-        从文件加载文档
+        Load document from file
 
         Args:
-            file_path: 文件路径
-            metadata: 元数据
+            file_path: File path
+            metadata: Metadata
 
         Returns:
-            List[Dict]: 文档块列表
+            List[Dict]: List of document chunks
         """
         path = Path(file_path)
 
         if not path.exists():
-            raise FileNotFoundError(f"文件不存在：{file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")
 
-        # 根据文件扩展名选择加载方式
+        # Choose loading method based on file extension
         if path.suffix == ".txt":
             text = self._load_txt(path)
         elif path.suffix == ".pdf":
@@ -87,7 +87,7 @@ class DocumentLoader:
         else:
             text = self._load_txt(path)
 
-        # 添加文件信息到元数据
+        # Add file information to metadata
         if metadata is None:
             metadata = {}
         metadata["source_file"] = str(path)
@@ -97,13 +97,13 @@ class DocumentLoader:
 
     def _split_text(self, text: str) -> List[str]:
         """
-        将文本分割成块
+        Split text into chunks
 
         Args:
-            text: 要分割的文本
+            text: Text to split
 
         Returns:
-            List[str]: 文本块列表
+            List[str]: List of text chunks
         """
         if len(text) <= self.chunk_size:
             return [text]
@@ -114,9 +114,9 @@ class DocumentLoader:
         while start < len(text):
             end = start + self.chunk_size
 
-            # 尝试在句子边界处分割
+            # Try to split at sentence boundaries
             if end < len(text):
-                # 查找最近的句子结束符
+                # Find nearest sentence end
                 for sep in ["。", "！", "？", ".", "!", "?", "\n"]:
                     last_sep = text[start:end].rfind(sep)
                     if last_sep != -1:
@@ -132,11 +132,11 @@ class DocumentLoader:
         return chunks
 
     def _load_txt(self, path: Path) -> str:
-        """加载 TXT 文件"""
+        """Load TXT file"""
         return path.read_text(encoding="utf-8")
 
     def _load_pdf(self, path: Path) -> str:
-        """加载 PDF 文件"""
+        """Load PDF file"""
         try:
             from pypdf import PdfReader
 
@@ -146,4 +146,4 @@ class DocumentLoader:
                 text += page.extract_text() + "\n\n"
             return text
         except ImportError:
-            raise ImportError("请安装 pypdf: pip install pypdf")
+            raise ImportError("Please install pypdf: pip install pypdf")

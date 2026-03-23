@@ -1,7 +1,7 @@
 """
-向量存储模块
+Vector Storage Module
 
-使用 ChromaDB 存储和检索文档嵌入
+Uses ChromaDB to store and retrieve document embeddings
 """
 import chromadb
 from chromadb.config import Settings
@@ -11,27 +11,27 @@ from core.config import Config
 
 class KnowledgeStore:
     """
-    知识库存储类
+    Knowledge base storage class
 
-    使用 ChromaDB 进行向量存储和相似度检索
+    Uses ChromaDB for vector storage and similarity retrieval
     """
 
     def __init__(self, collection_name: str = "knowledge"):
         """
-        初始化知识库
+        Initialize knowledge base
 
         Args:
-            collection_name: 集合名称
+            collection_name: Collection name
         """
-        # 创建持久化客户端
+        # Create persistent client
         self.client = chromadb.PersistentClient(
             path=Config.CHROMA_PERSIST_DIR
         )
 
-        # 获取或创建集合
+        # Get or create collection
         self.collection = self.client.get_or_create_collection(
             name=collection_name,
-            metadata={"hnsw:space": "cosine"},  # 使用余弦相似度
+            metadata={"hnsw:space": "cosine"},  # Use cosine similarity
         )
 
     def add_documents(
@@ -41,12 +41,12 @@ class KnowledgeStore:
         metadatas: List[Dict[str, Any]] = None,
     ):
         """
-        添加文档到知识库
+        Add documents to knowledge base
 
         Args:
-            documents: 文档内容列表
-            ids: 文档 ID 列表
-            metadatas: 文档元数据列表
+            documents: List of document content
+            ids: List of document IDs
+            metadatas: List of document metadata
         """
         self.collection.add(
             documents=documents,
@@ -61,15 +61,15 @@ class KnowledgeStore:
         where: Dict[str, Any] = None,
     ) -> Dict[str, Any]:
         """
-        搜索相关文档
+        Search for relevant documents
 
         Args:
-            query: 查询文本
-            n_results: 返回结果数量
-            where: 过滤条件
+            query: Query text
+            n_results: Number of results to return
+            where: Filter conditions
 
         Returns:
-            Dict: 包含文档、距离、元数据等的搜索结果
+            Dict: Search results containing documents, distances, metadata, etc.
         """
         return self.collection.query(
             query_texts=[query],
@@ -78,16 +78,16 @@ class KnowledgeStore:
         )
 
     def get_document_count(self) -> int:
-        """获取文档总数"""
+        """Get total document count"""
         return self.collection.count()
 
     def delete_documents(self, ids: List[str]):
-        """删除文档"""
+        """Delete documents"""
         self.collection.delete(ids=ids)
 
     def clear(self):
-        """清空知识库"""
-        # 重建集合
+        """Clear knowledge base"""
+        # Recreate collection
         self.client.delete_collection(self.collection.name)
         self.collection = self.client.create_collection(
             name=self.collection.name,

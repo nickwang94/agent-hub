@@ -1,184 +1,276 @@
-# Agent Hub - 多 Agent 协作系统
+# Agent Hub
 
-一个基于 LangChain 和 LangGraph 的多 Agent 协作系统，用于学习 AI Agent 开发。
+A multi-agent collaboration system based on LangChain and LangGraph, with a modern ChatGPT-like web interface.
 
-## 功能特性
+## Features
 
-- **对话 Agent**: 通用对话交互
-- **研究 Agent**: 基于知识库的问答
-- **Session 管理**: 多会话支持和历史管理
-- **多 Agent 编排**: 使用 LangGraph 实现智能路由
-- **知识库**: 支持文档加载和向量检索
+- **Conversation Agent**: General conversational interaction
+- **Researcher Agent**: Knowledge base Q&A with RAG
+- **Session Management**: Multi-session support and history management
+- **Multi-Agent Orchestration**: Intelligent routing using LangGraph
+- **Knowledge Base**: Document loading and vector retrieval (ChromaDB)
+- **Modern Web UI**: ChatGPT-like interface
 
-## 项目结构
+## System Architecture
 
 ```
-agent-hub/
-├── core/              # 核心模块
-│   ├── config.py      # 配置管理
-│   └── llm.py         # LLM 客户端
-├── agents/            # Agent 定义
-│   ├── base.py        # 基础 Agent 类
-│   ├── chat.py        # 对话 Agent
-│   └── researcher.py  # 研究 Agent
-├── knowledge/         # 知识库
-│   ├── store.py       # ChromaDB 向量存储
-│   └── loader.py      # 文档加载器
-├── session/           # Session 管理
-│   └── manager.py     # 会话管理器
-├── orchestrator.py    # 多 Agent 编排 (LangGraph)
-├── main.py           # CLI 入口
-└── pyproject.toml    # 项目配置
++------------------------------------------------------------------+
+|                        Frontend (React)                           |
+|                    http://localhost:5173                          |
+|  +------------------------------------------------------------+  |
+|  |  App.jsx / App.css                                          |  |
+|  |  - Chat interface component                                  |  |
+|  |  - Message history management                                |  |
+|  |  - Session management                                        |  |
+|  +------------------------------------------------------------+  |
++------------------------------------------------------------------+
+                              |
+                              | HTTP REST API
+                              v
++------------------------------------------------------------------+
+|                        Backend (Flask)                            |
+|                    http://localhost:8080                          |
+|  +------------------------------------------------------------+  |
+|  |  api.py - REST API Entry Point                               |  |
+|  |  - POST /chat           Chat endpoint                        |  |
+|  |  - GET /sessions        Session list                         |  |
+|  |  - DELETE /sessions/:id Delete session                       |  |
+|  |  - POST /knowledge/add  Add knowledge                        |  |
+|  |  - GET /knowledge/status Knowledge base status               |  |
+|  +------------------------------------------------------------+  |
++------------------------------------------------------------------+
+                              |
+        +---------------------+---------------------+
+        v                     v                     v
++----------------+  +----------------+  +----------------+
+| orchestrator.py|  |session/manager |  |knowledge/store |
+| LangGraph FSM  |  | Session Mgmt   |  | ChromaDB Vector|
+| - Smart routing|  | - Create/Delete|  | - Doc storage  |
+| - ChatAgent    |  | - History      |  | - Similarity   |
+| - Researcher   |  | - Expiration   |  | - Metadata     |
++----------------+  +----------------+  +----------------+
+        |
+        v
++------------------------------------------------------------------+
+|                    LLM Provider (DashScope)                       |
+|              Alibaba Bailian - OpenAI Compatible                  |
+|                    Models: qwen-plus / qwen-max                   |
++------------------------------------------------------------------+
 ```
 
-## 快速开始
+### Core Modules
 
-### 1. 安装依赖
+| Module | File | Description |
+|--------|------|-------------|
+| **Config** | `src/core/config.py` | Environment variables, API Key, model config |
+| **LLM Client** | `src/core/llm.py` | LangChain LLM wrapper |
+| **Chat Agent** | `src/agents/chat.py` | General conversation |
+| **Researcher Agent** | `src/agents/researcher.py` | Knowledge base RAG Q&A |
+| **Orchestrator** | `src/orchestrator.py` | LangGraph state machine, agent routing |
+| **Knowledge Store** | `src/knowledge/store.py` | ChromaDB vector storage |
+| **Document Loader** | `src/knowledge/loader.py` | Text/document parsing |
+| **Session Manager** | `src/session/manager.py` | Session lifecycle management |
+
+## Quick Start
+
+### Requirements
+
+- Python 3.10+
+- Node.js 18+
+- Alibaba Bailian API Key (get from https://bailian.console.aliyun.com/)
+
+### 1. Install Backend Dependencies
 
 ```bash
-cd agent-hub
+cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -e .
 ```
 
-或者手动安装：
+Or use the script:
+```bash
+./backend/bin/install.sh
+```
+
+### 2. Configure API Key
 
 ```bash
-pip install langchain langchain-openai langgraph chromadb python-dotenv pypdf
+cp backend/.env.example backend/.env
 ```
 
-### 2. 配置环境变量
-
+Edit `backend/.env` with your API Key:
 ```bash
-cp .env.example .env
-```
+# Alibaba Bailian API Key
+DASHSCOPE_API_KEY=sk-your-api-key-here
 
-编辑 `.env` 文件，填入你的阿里百炼 API Key：
-
-```
-DASHSCOPE_API_KEY=your-api-key-here
+# Model Configuration
 LLM_MODEL=qwen-plus
+
+# API Base URL
+LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 ```
 
-获取 API Key: https://bailian.console.aliyun.com/
-
-### 3. 运行程序
+### 3. Start Backend Server
 
 ```bash
-python main.py
+./backend/bin/start.sh
 ```
 
-## 使用指南
+Backend will run at `http://localhost:8080`
 
-### 基本对话
+### 4. Start Frontend
 
-直接输入文字即可与对话 Agent 交互：
-
-```
-你：你好，介绍一下你自己
-AI (对话): 你好！我是一个 AI 助手...
+```bash
+./frontend/bin/start.sh
 ```
 
-### 知识库问答
+Frontend will run at `http://localhost:5173`
 
-使用关键词（查询、搜索、知识库等）会自动切换到研究 Agent：
+Open your browser and visit http://localhost:5173 to start using!
 
-```
-你：查询知识库中关于 Python 的内容
-AI (研究): 根据知识库内容，Python 是一种...
-```
-
-### 加载文档到知识库
+## Project Structure
 
 ```
-/load <文件路径>
+agent-hub/
+├── backend/                  # Backend services
+│   ├── bin/                  # Startup scripts
+│   │   ├── install.sh        # Install dependencies
+│   │   └── start.sh          # Start server
+│   ├── data/                 # Data directory
+│   │   └── chroma_db/        # ChromaDB vector database
+│   ├── src/                  # Backend source code
+│   │   ├── core/             # Core modules (config, LLM)
+│   │   ├── agents/           # Agent definitions (Chat, Researcher)
+│   │   ├── knowledge/        # Knowledge base (Store, Loader)
+│   │   ├── session/          # Session management
+│   │   └── orchestrator.py   # Multi-agent orchestration
+│   ├── api.py                # Flask API entry point
+│   ├── pyproject.toml        # Python dependencies
+│   ├── venv/                 # Python virtual environment
+│   └── .env                  # Environment configuration
+├── frontend/                 # Frontend React application
+│   ├── bin/                  # Startup scripts
+│   │   ├── install.sh        # Install dependencies
+│   │   └── start.sh          # Start server
+│   ├── package.json          # Node.js dependencies
+│   └── src/
+│       ├── App.jsx           # Main application component
+│       ├── App.css           # Styles
+│       └── main.jsx          # Entry file
+├── .env                      # Environment configuration (root)
+├── .gitignore                # Git ignore file
+└── README.md                 # Project documentation
 ```
 
-支持 .txt, .md, .pdf 等格式。
+## Configuration
 
-### 常用命令
+### Environment Variables
 
-| 命令 | 说明 |
-|------|------|
-| `/help` | 显示帮助 |
-| `/new` | 新建会话 |
-| `/history` | 查看历史消息 |
-| `/clear` | 清空当前会话 |
-| `/status` | 显示系统状态 |
-| `/load` | 加载文档到知识库 |
-| `/agents` | 显示可用 Agent |
-| `/quit` | 退出程序 |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DASHSCOPE_API_KEY` | Alibaba Bailian API Key | Required |
+| `LLM_MODEL` | Model name | `qwen-plus` |
+| `LLM_BASE_URL` | API Base URL | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `CHROMA_PERSIST_DIR` | Knowledge base storage path | `./data/chroma_db` |
 
-## 核心概念讲解
+### Model Selection
 
-### 1. LangChain 是什么？
+| Model | Description | Use Case |
+|-------|-------------|----------|
+| `qwen-plus` | Balanced performance | General conversation, simple tasks |
+| `qwen-max` | Best performance | Complex reasoning, code generation |
+| `qwen-turbo` | Fast response | Real-time interaction, high concurrency |
 
-LangChain 是一个用于开发 LLM 应用的框架，提供了：
-- **Model I/O**: 统一的 LLM 接口
-- **Prompts**: 提示词管理
-- **Chains**: 链式调用
-- **Agents**: 自主决策的 LLM 调用
+## API Endpoints
 
-### 2. LangGraph 是什么？
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/chat` | POST | Send chat message |
+| `/sessions` | GET | Get session list |
+| `/sessions/:id` | DELETE | Delete session |
+| `/knowledge/add` | POST | Add knowledge to knowledge base |
+| `/knowledge/status` | GET | Get knowledge base status |
+| `/health` | GET | Health check |
 
-LangGraph 是 LangChain 出品的基于图的状态机库，用于：
-- 构建复杂的多 Agent 工作流
-- 实现有状态的决策流程
-- 支持循环和条件分支
+### API Examples
 
-### 3. Agent 架构
+```bash
+# Send chat message
+curl -X POST http://localhost:8080/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello"}'
 
+# Add knowledge
+curl -X POST http://localhost:8080/knowledge/add \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Python is a programming language"}'
+
+# Get knowledge base status
+curl http://localhost:8080/knowledge/status
+
+# Get session list
+curl http://localhost:8080/sessions
+
+# Delete session
+curl -X DELETE http://localhost:8080/sessions/<session_id>
 ```
-用户输入 → Router(路由) → Chat Agent 或 Researcher Agent → 输出
+
+## Common Commands
+
+```bash
+# Install backend dependencies
+./backend/bin/install.sh
+
+# Install frontend dependencies
+./frontend/bin/install.sh
+
+# Start backend server
+./backend/bin/start.sh
+
+# Start frontend server
+./frontend/bin/start.sh
+
+# Push to GitHub
+git add . && git commit -m "message" && git push
 ```
 
-### 4. 向量知识库
+## Development Guide
 
-```
-文档 → 分割 → Embedding → 向量存储 → 相似度检索 → RAG 回答
-```
+### Adding a New Agent
 
-## 学习路线
-
-1. **第一步**: 理解 `agents/base.py` - 基础 Agent 接口设计
-2. **第二步**: 理解 `agents/chat.py` - 如何与 LLM 对话
-3. **第三步**: 理解 `knowledge/` - 向量数据库的使用
-4. **第四步**: 理解 `orchestrator.py` - LangGraph 状态机
-5. **第五步**: 扩展新的 Agent 类型
-
-## 扩展开发
-
-### 添加新的 Agent
-
-1. 继承 `BaseAgent` 类
-2. 实现 `invoke` 方法
-3. 在 `orchestrator.py` 中添加路由逻辑
+1. Create a new Agent class in `backend/src/agents/`
+2. Extend `BaseAgent` and implement the `invoke` method
+3. Add routing logic in `orchestrator.py`
 
 ```python
-from agents.base import BaseAgent
+# src/agents/my_agent.py
+from .base import BaseAgent
 
-class MyCustomAgent(BaseAgent):
-    def invoke(self, message: str, context=None) -> str:
-        # 你的逻辑
-        return "response"
+class MyAgent(BaseAgent):
+    def invoke(self, state: dict) -> dict:
+        # Implement your logic
+        return state
 ```
 
-### 修改路由逻辑
+### Modifying Frontend Styles
 
-编辑 `orchestrator.py` 中的 `_router_node` 方法，添加自定义的路由判断。
+Edit `frontend/src/App.css` to customize the interface.
 
-## 调试技巧
+### Changing API Address
 
-1. 在 `.env` 中设置更小的模型以节省成本
-2. 使用 `print` 语句调试状态流转
-3. 查看 LangGraph 的可视化图：`graph.get_graph().draw_mermaid()`
+If the backend is not on the default port, edit `frontend/src/App.jsx`:
 
-## 参考资源
+```javascript
+const API_BASE_URL = 'http://localhost:8080'  // Change to your port
+```
 
-- [LangChain 文档](https://python.langchain.com/)
-- [LangGraph 文档](https://langchain-ai.github.io/langgraph/)
-- [ChromaDB 文档](https://docs.trychroma.com/)
+## Learning Resources
+
+- [LangChain Documentation](https://python.langchain.com/)
+- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
+- [ChromaDB Documentation](https://docs.trychroma.com/)
+- [Alibaba Bailian Documentation](https://help.aliyun.com/zh/dashscope/)
 
 ## License
 
