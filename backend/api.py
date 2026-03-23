@@ -98,6 +98,15 @@ def get_sessions():
     return jsonify({'sessions': sessions})
 
 
+@app.route('/sessions/<session_id>', methods=['GET'])
+def get_session(session_id):
+    """Get session with messages"""
+    session = session_manager.get_session(session_id)
+    if session:
+        return jsonify({'session': session.to_dict()})
+    return jsonify({'error': 'Session not found'}), 404
+
+
 @app.route('/sessions/<session_id>', methods=['DELETE'])
 def delete_session(session_id):
     """Delete session"""
@@ -164,6 +173,7 @@ if __name__ == '__main__':
     print("API Endpoints:")
     print("  POST /chat         - Chat")
     print("  GET  /sessions     - Get sessions list")
+    print("  GET  /sessions/:id - Get session with messages")
     print("  DELETE /sessions/:id - Delete session")
     print("  POST /knowledge/add - Add knowledge")
     print("  GET  /knowledge/status - Knowledge base status")
