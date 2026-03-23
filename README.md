@@ -2,7 +2,7 @@
 
 A multi-agent collaboration system based on LangChain and LangGraph, with a modern ChatGPT-like web interface.
 
-![Agent Hub UI](docs/screenshot.png)
+![Agent Hub UI](docs/image.png)
 
 ## Features
 
